@@ -1,0 +1,30 @@
+@import "tailwindcss";
+:root { --ink:#16293d; --muted:#718097; --line:#e6eaf0; --mint:#0f766e; --surface:#fff; --bg:#f5f7fa; }
+@theme { --color-brand:#0f766e; --color-brand-light:#dff6f1; --font-sans:var(--font-geist-sans),Arial,sans-serif; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:Arial,Helvetica,sans-serif; }
+input,select,textarea,button { font:inherit; }
+a { text-decoration:none; }
+button, a, input, textarea, select { outline-offset:2px; }
+:focus-visible { outline:3px solid #14b8a6; }
+.card { background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:0 4px 24px rgba(28,49,75,.025); }
+.field { border:1px solid #dce2ea; border-radius:10px; min-height:42px; padding:9px 12px; width:100%; background:white; font-size:14px; color:var(--ink); }
+.field:focus { outline:2px solid #99f6e4; border-color:#0f766e; }
+.label { font-size:12px; font-weight:700; letter-spacing:.01em; color:#48576d; margin-bottom:6px; display:block; }
+.btn { align-items:center; justify-content:center; display:inline-flex; gap:8px; padding:10px 16px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; transition:background .15s,transform .15s; white-space:nowrap; }
+.btn:disabled { opacity:.55; cursor:not-allowed; }
+.btn-primary { color:white; background:#0f766e; border:1px solid #0f766e; }
+.btn-primary:hover:not(:disabled){ background:#0b5c55; }
+.btn-secondary { color:#284359; background:#fff; border:1px solid #dce3eb; }
+.btn-secondary:hover:not(:disabled){ background:#f3f6f9; }
+.btn-danger { color:#b42318; background:#fff7f7; border:1px solid #fecaca; }
+.muted { color:var(--muted); }
+.heading { font-weight:750; letter-spacing:-.035em; }
+.pill { font-size:11px; font-weight:750; border-radius:99px; display:inline-flex; padding:5px 9px; align-items:center; gap:5px; letter-spacing:.02em; }
+.table { width:100%; border-collapse:collapse; }
+.table th { background:#f8fafc; font-size:11px; font-weight:800; color:#718096; letter-spacing:.07em; text-transform:uppercase; text-align:left; padding:14px 16px; border-bottom:1px solid var(--line); }
+.table td { padding:15px 16px; font-size:13px; border-bottom:1px solid #edf0f4; vertical-align:middle; }
+.table tr:last-child td { border-bottom:0; }
+.table tbody tr:hover { background:#fafdfc; }
+.auth-grid { background: radial-gradient(circle at 78% 15%, #c9f7e9,transparent 34%),linear-gradient(135deg,#ecf6f4,#f7fbfa 60%,#eff4f9); min-height:100vh; }
+.small-section { color:#748299; font-weight:800; text-transform:uppercase; letter-spacing:.12em; font-size:10px; }

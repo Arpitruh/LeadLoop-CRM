@@ -1,0 +1,63 @@
+name: LeadLoop CI
+on:
+  push:
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: leadloop_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d leadloop_ci" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/leadloop_ci?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/leadloop_ci?schema=public
+      ALLOW_DB_INTEGRATION_TESTS: "1"
+      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_SECRET: github-ci-secret-do-not-use-in-production-value
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      SISTERS_CRM_SECRET: github-ci-sisters-test-secret-at-least-32-characters
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      # The archive cannot generate a lockfile without registry access.
+      # Once a lockfile is committed, npm ci is used automatically.
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: Generate Prisma Client
+        run: npm run db:generate
+      - name: Apply checked-in migrations
+        run: npm run db:deploy
+      - name: Check migration status
+        run: npm run db:status
+      - name: Static checks
+        run: npm run lint && npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Real Postgres tests
+        run: npm run test:integration
+      - name: Production build
+        run: npm run build
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+      - name: Browser smoke tests
+        run: npm run test:e2e
+      - name: HTTP smoke tests
+        run: |
+          npm run start > /tmp/leadloop-next.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl --silent --fail http://localhost:3000/api/health/ready >/dev/null; then break; fi
+            sleep 2
+          done
+          npm run smoke

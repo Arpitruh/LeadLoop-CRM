@@ -1,0 +1,272 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Better Auth's schema: names and mapped table names follow its Prisma adapter contract.
+model User {
+  id            String       @id
+  name          String
+  email         String       @unique
+  emailVerified Boolean      @default(false)
+  image         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  memberships   Membership[]
+  @@map("user")
+}
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@map("session")
+}
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  @@index([userId])
+  @@map("account")
+}
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+  @@index([identifier])
+  @@map("verification")
+}
+
+enum Role {
+  OWNER
+  STAFF
+}
+enum Stage {
+  NEW
+  CONTACTED
+  QUOTE_SENT
+  WON
+  LOST
+}
+enum LeadSource {
+  WEBSITE_FORM
+  WHATSAPP
+  INSTAGRAM
+  CALL
+  REFERRAL
+  WALK_IN
+  OTHER
+}
+enum TaskType {
+  CALL
+  EMAIL
+  WHATSAPP
+  VISIT
+  OTHER
+}
+enum TaskStatus {
+  OPEN
+  DONE
+}
+enum NoteType {
+  NOTE
+  CALL
+  WHATSAPP
+  VISIT
+}
+
+model Business {
+  id           String           @id @default(cuid())
+  name         String
+  slug         String           @unique
+  timezone     String           @default("Asia/Kolkata")
+  currencyCode String           @default("INR")
+  createdAt    DateTime         @default(now())
+  memberships  Membership[]
+  contacts     Contact[]
+  leads        Lead[]
+  tasks        LeadTask[]
+  notes        Note[]
+  events       LeadEvent[]
+  forms        PublicForm[]
+  submissions  FormSubmission[]
+  invitations  Invitation[]
+  tags         Tag[]
+}
+model Membership {
+  id         String   @id @default(cuid())
+  businessId String
+  userId     String
+  role       Role     @default(STAFF)
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([businessId, userId])
+  @@index([userId])
+}
+model Invitation {
+  id             String    @id @default(cuid())
+  businessId     String
+  invitedEmail   String
+  role           Role      @default(STAFF)
+  tokenHash      String    @unique
+  invitedById    String
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  business       Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  @@index([businessId, invitedEmail])
+}
+model Contact {
+  id          String    @id @default(cuid())
+  businessId  String
+  name        String
+  phoneE164   String?
+  email       String?
+  doNotContact Boolean @default(false)
+  consentAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  leads       Lead[]
+  @@unique([businessId, phoneE164])
+  @@index([businessId, email])
+}
+model Lead {
+  id           String       @id @default(cuid())
+  businessId   String
+  contactId    String
+  title        String
+  interest     String?
+  source       LeadSource   @default(OTHER)
+  sourceDetail String?
+  stage        Stage        @default(NEW)
+  assignedToId String?
+  createdById  String?
+  budgetMin    Int?
+  budgetMax    Int?
+  valueMinor   Int?
+  currencyCode String       @default("INR")
+  lostReason   String?
+  closedAt     DateTime?
+  deletedAt    DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact      Contact      @relation(fields: [contactId], references: [id])
+  tasks        LeadTask[]
+  notes        Note[]
+  events       LeadEvent[]
+  submissions  FormSubmission[]
+  tags         LeadTag[]
+  @@index([businessId, stage, createdAt])
+  @@index([businessId, assignedToId, createdAt])
+  @@index([businessId, deletedAt])
+}
+model LeadTask {
+  id           String     @id @default(cuid())
+  businessId   String
+  leadId       String
+  assignedToId String
+  title        String
+  type         TaskType   @default(CALL)
+  dueAt        DateTime
+  status       TaskStatus @default(OPEN)
+  completedAt  DateTime?
+  createdAt    DateTime   @default(now())
+  business     Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  lead         Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  @@index([businessId, dueAt, status])
+  @@index([businessId, assignedToId, status])
+}
+model Note {
+  id         String   @id @default(cuid())
+  businessId String
+  leadId     String
+  authorId   String
+  body       String   @db.VarChar(5000)
+  type       NoteType @default(NOTE)
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  @@index([businessId, leadId, createdAt])
+}
+model LeadEvent {
+  id         String   @id @default(cuid())
+  businessId String
+  leadId     String
+  actorId    String?
+  action     String
+  fromValue  String?
+  toValue    String?
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  @@index([businessId, leadId, createdAt])
+}
+model Tag {
+  id         String @id @default(cuid())
+  businessId String
+  name       String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  leadTags   LeadTag[]
+  @@unique([businessId, name])
+}
+model LeadTag {
+  leadId String
+  tagId  String
+  lead   Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  @@id([leadId, tagId])
+}
+model PublicForm {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String   @default("Website enquiry")
+  publicKey  String   @unique
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  submissions FormSubmission[]
+  @@index([businessId])
+}
+model FormSubmission {
+  id                   String    @id @default(cuid())
+  businessId           String
+  formId               String?
+  leadId               String?
+  externalSubmissionId String?
+  sourceDetail         String?
+  createdAt            DateTime  @default(now())
+  business             Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  form                 PublicForm? @relation(fields: [formId], references: [id], onDelete: SetNull)
+  lead                 Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  @@unique([businessId, externalSubmissionId])
+  @@index([businessId, createdAt])
+}
