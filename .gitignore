@@ -8,3 +8,4 @@ playwright-report
 .DS_Store
 src/generated/prisma
 *.tsbuildinfo
+*:Zone.Identifier
