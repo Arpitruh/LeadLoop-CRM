@@ -67,7 +67,7 @@ describe("auth email delivery through Notification Service", () => {
     await sendEmail("person@example.test", "Verify", "", link, "verification");
     await sendEmail("person@example.test", "Verify", "", link, "verification");
     await sendEmail("person@example.test", "Reset", "", link, "password-reset");
-    const keys = send.mock.calls.map((x: [URL, RequestInit]) => JSON.parse(String(x[1].body)).idempotencyKey);
+    const keys = send.mock.calls.map(x => JSON.parse(String((x[1] as RequestInit).body)).idempotencyKey);
     expect(keys[0]).toBe(keys[1]);
     expect(keys[0]).not.toBe(keys[2]);
   });
