@@ -12,7 +12,9 @@ export async function POST(req: Request) {
     const form = await prisma.publicForm.findUnique({ where: { publicKey: body.publicKey }, include: { business: true } });
     if (!form?.enabled) throw new ApiError(404, "NOT_FOUND", "This form is not available");
     const input = createLeadSchema.parse({ name: body.name, phone: body.phone, email: body.email, title: body.interest, interest: body.message, source: "WEBSITE_FORM", consent: true });
-    await createLeadRecord({ businessId: form.businessId, input, currencyCode: form.business.currencyCode, formId: form.id, externalSubmissionId: body.externalSubmissionId ? `public:${form.id}:${body.externalSubmissionId}` : undefined });
-    return ok({ accepted: true }, 201);
+    const result = await createLeadRecord({ businessId: form.businessId, input, currencyCode: form.business.currencyCode, formId: form.id, externalSubmissionId: body.externalSubmissionId ? `public:${form.id}:${body.externalSubmissionId}` : undefined });
+    // A repeated submission is safe to acknowledge, but must not pretend
+    // that another lead was created. Keep the public response minimal.
+    return ok({ accepted: true }, result.duplicate ? 200 : 201);
   } catch (e) { return fail(e); }
 }

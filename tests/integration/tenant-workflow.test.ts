@@ -11,12 +11,12 @@ import { prisma } from "@/lib/prisma";
 import { requireWorkspace } from "@/lib/tenant";
 import { createLeadRecord } from "@/lib/lead-service";
 import { createLeadSchema } from "@/lib/validation";
-import { GET as listLeads } from "@/app/api/v1/leads/route";
+import { GET as listLeads, POST as addLead } from "@/app/api/v1/leads/route";
 import { GET as getLead, PATCH as editLead } from "@/app/api/v1/leads/[id]/route";
 import { PATCH as moveStage } from "@/app/api/v1/leads/[id]/stage/route";
 import { GET as getContact } from "@/app/api/v1/contacts/[id]/route";
 import { POST as publicEnquiry } from "@/app/api/v1/public/enquiries/route";
-import { GET as listTasks } from "@/app/api/v1/tasks/route";
+import { GET as listTasks, POST as addTask } from "@/app/api/v1/tasks/route";
 import { PATCH as editTask } from "@/app/api/v1/tasks/[id]/route";
 import { POST as partnerEnquiry } from "@/app/api/v1/integrations/sisters-magical-spoon/route";
 import { signPayload } from "@/lib/signature";
@@ -90,6 +90,58 @@ describe("workspace isolation and business workflows", () => {
     expect(result.data.some((lead: { id: string }) => lead.id === primaryLeadId)).toBe(true);
     expect(result.data.some((lead: { id: string }) => lead.id === foreignLeadId)).toBe(false);
   });
+  it("creates a lead, normalizes its contact and schedules a follow-up transactionally", async () => {
+    select(aId, ownerA);
+    const dueAt = new Date(Date.now() + 2 * 86400000).toISOString();
+    const response = await addLead(makeRequest("/api/v1/leads", "POST", {
+      name: "New Client", phone: "9876543210", title: "Book a demo",
+      source: "CALL", assignedToId: staffA, dueAt, consent: true,
+    }));
+    expect(response.status).toBe(201);
+    const { data } = await response.json();
+    const lead = await prisma.lead.findUniqueOrThrow({
+      where: { id: data.id },
+      include: { contact: true, tasks: true, events: true },
+    });
+    expect(lead.businessId).toBe(aId);
+    expect(lead.assignedToId).toBe(staffA);
+    expect(lead.contact.phoneE164).toBe("+919876543210");
+    expect(lead.tasks).toHaveLength(1);
+    expect(lead.tasks[0]?.assignedToId).toBe(staffA);
+    expect(lead.events.filter(x => x.action === "CREATED")).toHaveLength(1);
+  });
+  it("prevents staff from assigning newly created leads to a teammate", async () => {
+    select(aId, staffA);
+    const response = await addLead(makeRequest("/api/v1/leads", "POST", {
+      name: "Private Client", email: `private-${run}@example.test`,
+      title: "Assignment bypass attempt", assignedToId: staffB, source: "CALL",
+    }));
+    expect(response.status).toBe(403);
+    const found = await prisma.lead.count({ where: { businessId: aId, title: "Assignment bypass attempt" } });
+    expect(found).toBe(0);
+  });
+  it("creates follow-up tasks only for accessible leads and workspace members", async () => {
+    select(aId, ownerA);
+    const dueAt = new Date(Date.now() + 86400000).toISOString();
+    const cross = await addTask(makeRequest("/api/v1/tasks", "POST", {
+      leadId: foreignLeadId, title: "Cross-workspace task", dueAt,
+    }));
+    expect(cross.status).toBe(404);
+    const valid = await addTask(makeRequest("/api/v1/tasks", "POST", {
+      leadId: primaryLeadId, title: "Call with owner", dueAt, assignedToId: ownerA,
+    }));
+    expect(valid.status).toBe(201);
+    const { data } = await valid.json();
+    expect(data.businessId).toBe(aId);
+    expect(data.assignedToId).toBe(ownerA);
+    const result = await editTask(makeRequest(`/api/v1/tasks/${data.id}`, "PATCH", {
+      status: "DONE",
+    }), ctx(data.id));
+    expect(result.status).toBe(200);
+    const saved = await prisma.leadTask.findUniqueOrThrow({ where: { id: data.id } });
+    expect(saved.status).toBe("DONE");
+    expect(saved.completedAt).not.toBeNull();
+  });
   it("cannot read or patch a known foreign lead ID", async () => {
     select(aId, ownerA);
     const response = await getLead(makeRequest(`/api/v1/leads/${foreignLeadId}`), ctx(foreignLeadId));
@@ -107,7 +159,7 @@ describe("workspace isolation and business workflows", () => {
     const first = await publicEnquiry(makeRequest("/api/v1/public/enquiries", "POST", data));
     expect(first.status).toBe(201);
     const repeat = await publicEnquiry(makeRequest("/api/v1/public/enquiries", "POST", data));
-    expect(repeat.status).toBe(201);
+    expect(repeat.status).toBe(200);
     expect(await prisma.formSubmission.count({ where: { businessId: bId, externalSubmissionId: `public:${form.id}:${data.externalSubmissionId}` } })).toBe(1);
     const before = await prisma.lead.count({ where: { businessId: bId } });
     expect((await publicEnquiry(makeRequest("/api/v1/public/enquiries", "POST", { ...data, externalSubmissionId: randomUUID(), website: "https://spam.test" }))).status).toBe(202);
