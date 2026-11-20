@@ -12,14 +12,14 @@ export const auth = betterAuth({
     minPasswordLength: 10,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
-      await sendEmail(user.email, "Reset your LeadLoop password", mailTemplate("Reset your password", "Use this secure link to choose a new password.", url), url);
+      await sendEmail(user.email, "Reset your LeadLoop password", mailTemplate("Reset your password", "Use this secure link to choose a new password.", url), url, "password-reset");
     },
   },
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: false,
     sendVerificationEmail: async ({ user, url }) => {
-      await sendEmail(user.email, "Verify your LeadLoop email", mailTemplate("Verify your email", "Verify your address to set up your business workspace.", url), url);
+      await sendEmail(user.email, "Verify your LeadLoop email", mailTemplate("Verify your email", "Verify your address to set up your business workspace.", url), url, "verification");
     },
   },
   rateLimit: { enabled: true, window: 60, max: 10, storage: "memory" },
