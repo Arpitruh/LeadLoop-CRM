@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     const business = await prisma.business.findUniqueOrThrow({ where: { id: c.businessId } });
     const link = `${process.env.BETTER_AUTH_URL}/invite/${token}`;
     try {
-      await sendEmail(email, `You're invited to ${business.name} on LeadLoop`, mailTemplate("Your invitation", "Accept your invitation to the workspace. This link expires in seven days.", link), link);
+      await sendEmail(email, `You're invited to ${business.name} on LeadLoop`, mailTemplate("Your invitation", "Accept your invitation to the workspace. This link expires in seven days.", link), link, "invitation");
     } catch (error) {
       await prisma.invitation.delete({ where: { id: invitation.id } });
       throw error;
