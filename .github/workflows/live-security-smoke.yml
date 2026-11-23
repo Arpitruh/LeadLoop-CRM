@@ -2,7 +2,7 @@ name: Live LeadLoop access smoke
 on:
   push:
     branches:
-      - audit/live-production-smoke
+      - main
     paths:
       - .github/workflows/live-security-smoke.yml
       - scripts/smoke.mjs
