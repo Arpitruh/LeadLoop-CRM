@@ -7,7 +7,7 @@
 const base = process.env.SMOKE_BASE_URL || "http://localhost:3000";
 const checks = [
   { path: "/", status: 200, match: /LeadLoop|great leads/i },
-  { path: "/login", status: 200, match: /<html\\b/i },
+  { path: "/login", status: 200, match: /<html\b/i },
   { path: "/api/health/live", status: 200, jsonStatus: "ok" },
   { path: "/api/health/ready", status: 200, jsonStatus: "ready" },
   // An anonymous caller must never read workspace or owner-only resources.
