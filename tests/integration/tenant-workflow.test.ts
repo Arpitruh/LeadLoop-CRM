@@ -17,6 +17,8 @@ import { PATCH as moveStage } from "@/app/api/v1/leads/[id]/stage/route";
 import { GET as getContact } from "@/app/api/v1/contacts/[id]/route";
 import { POST as publicEnquiry } from "@/app/api/v1/public/enquiries/route";
 import { GET as listTasks, POST as addTask } from "@/app/api/v1/tasks/route";
+import { GET as listTeam, POST as inviteTeam } from "@/app/api/v1/team/invitations/route";
+import { PATCH as changeSettings } from "@/app/api/v1/settings/route";
 import { PATCH as editTask } from "@/app/api/v1/tasks/[id]/route";
 import { POST as partnerEnquiry } from "@/app/api/v1/integrations/sisters-magical-spoon/route";
 import { signPayload } from "@/lib/signature";
@@ -175,6 +177,33 @@ describe("workspace isolation and business workflows", () => {
     const response = await editTask(makeRequest(`/api/v1/tasks/${otherTaskId}`, "PATCH", { status: "DONE" }), ctx(otherTaskId));
     expect(response.status).toBe(404);
     expect((await prisma.leadTask.findUniqueOrThrow({ where: { id: otherTaskId } })).status).toBe("OPEN");
+  });
+  it("denies staff access to owner-only team APIs and workspace settings changes", async () => {
+    select(aId, staffA);
+    const listResponse = await listTeam();
+    expect(listResponse.status).toBe(403);
+    const inviteResponse = await inviteTeam(makeRequest("/api/v1/team/invitations", "POST", {
+      email: "unauthorized-invite@example.test",
+    }));
+    expect(inviteResponse.status).toBe(403);
+    expect(await prisma.invitation.count({
+      where: { businessId: aId, invitedEmail: "unauthorized-invite@example.test" },
+    })).toBe(0);
+    const settingsResponse = await changeSettings(makeRequest("/api/v1/settings", "PATCH", {
+      name: "Unauthorized Rename",
+    }));
+    expect(settingsResponse.status).toBe(403);
+    expect((await prisma.business.findUniqueOrThrow({ where: { id: aId } })).name).toBe("Fixture A");
+  });
+  it("does not expose other workspaces or coworkers' leads to staff", async () => {
+    select(aId, staffB);
+    const list = await listLeads(makeRequest("/api/v1/leads"));
+    expect(list.status).toBe(200);
+    const body = await list.json();
+    expect(body.data.some((lead: { id: string }) => lead.id === primaryLeadId)).toBe(false);
+    expect(body.data.some((lead: { id: string }) => lead.id === foreignLeadId)).toBe(false);
+    expect((await getLead(makeRequest(`/api/v1/leads/${primaryLeadId}`), ctx(primaryLeadId))).status).toBe(404);
+    expect((await getLead(makeRequest(`/api/v1/leads/${foreignLeadId}`), ctx(foreignLeadId))).status).toBe(404);
   });
   it("records exactly one event for a stage change, and no event for replay", async () => {
     select(aId, staffA);
