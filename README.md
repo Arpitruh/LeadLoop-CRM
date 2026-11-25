@@ -1,5 +1,8 @@
 # LeadLoop CRM — MVP source (Phases 0–5)
 
+**Multi-tenant CRM software for small business sales and customer relationship management.** Built with Next.js, TypeScript, PostgreSQL and Prisma, LeadLoop brings contacts, leads, sales pipelines, tasks and workspace collaboration into one application.
+
+
 A Next.js multi-tenant CRM prototype with owner/staff workspaces, contacts, leads, pipeline, tasks, notes, basic reporting, invitations, public forms, and a signed Sister's Magical Spoon integration receiver.
 
 ## Scope
