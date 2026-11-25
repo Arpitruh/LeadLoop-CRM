@@ -1,13 +1,10 @@
-# LeadLoop CRM — MVP source (Phases 0–5)
+# LeadLoop CRM
 
-**Multi-tenant CRM software for small business sales and customer relationship management.** Built with Next.js, TypeScript, PostgreSQL and Prisma, LeadLoop brings contacts, leads, sales pipelines, tasks and workspace collaboration into one application.
-
-
-A Next.js multi-tenant CRM prototype with owner/staff workspaces, contacts, leads, pipeline, tasks, notes, basic reporting, invitations, public forms, and a signed Sister's Magical Spoon integration receiver.
+I built LeadLoop to explore how a small business can keep contacts, leads, tasks and sales activity in one place. It is a Next.js CRM prototype with separate workspaces for owners and staff, a Kanban pipeline, reporting, invitations and public lead forms.
 
 ## Scope
 
-**Included:** Phase 0 (app foundation and schema), 1 (Better Auth, workspace membership and invitations), 2 (contacts/leads/notes/tasks), 3 (dashboard and Kanban), 4 (public form and signed partner receiver), 5 (basic reports, UI states, starter tests, CI and deployment instructions).
+**Included:** Authentication, workspace membership, invitations, contacts, leads, notes, tasks, dashboards, public forms, a signed partner integration, reports and starter tests.
 
 **Excluded deliberately:** Manager role, permissions matrix customization, PostgreSQL RLS, Redis, CSV import/export, integration logs/diagnostics UI, custom fields, official WhatsApp Business API, billing, automated WhatsApp messages, email reminder jobs.
 
@@ -93,7 +90,7 @@ Read [`INTEGRATION.md`](./INTEGRATION.md) and the server-only example. The recei
 This is actual application source code, not a design mockup; verification and launch setup remain necessary. Start with [`DEPLOYMENT.md`](./DEPLOYMENT.md) and [`RELEASE_CHECKLIST.md`](./RELEASE_CHECKLIST.md).
 
 
-## Phase 1 deployment audit (2026-11-20)
+## Deployment audit (2026-11-20)
 
 - GitHub Actions verifies the code on disposable PostgreSQL; database-backed lead creation, contact normalization, assignment permissions, follow-up tasks, cross-tenant isolation, signed partner ingestion, and idempotent public forms are covered.
 - Vercel project `leadloop-crm-staging` has a READY production build connected to `main`. Deployment Protection (Vercel Authentication) is enabled. A READY build **does not** imply that authenticated CRM operations have passed against the hosted database.
