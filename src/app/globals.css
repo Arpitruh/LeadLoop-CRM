@@ -8,7 +8,14 @@ a { text-decoration:none; }
 button, a, input, textarea, select { outline-offset:2px; }
 :focus-visible { outline:3px solid #14b8a6; }
 .card { background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:0 4px 24px rgba(28,49,75,.025); }
-.field { border:1px solid #dce2ea; border-radius:10px; min-height:42px; padding:9px 12px; width:100%; background:white; font-size:14px; color:var(--ink); }
+.field { border:1px solid #dce2ea; border-radius:10px; min-height:42px; padding:9px 12px; width:100%; min-width:0; max-width:100%; background:white; font-size:14px; color:var(--ink); }
+/* These rules intentionally follow .field: unlayered CSS overrides Tailwind utilities. */
+.field.field-with-icon { padding-inline-start:44px; }
+.field.field-with-chevron { padding-inline-end:32px; }
+.field-icon { position:absolute; inset-inline-start:12px; top:50%; transform:translateY(-50%); pointer-events:none; }
+@media (max-width: 639px) {
+  .field { font-size:16px; min-height:44px; }
+}
 .field:focus { outline:2px solid #99f6e4; border-color:#0f766e; }
 .label { font-size:12px; font-weight:700; letter-spacing:.01em; color:#48576d; margin-bottom:6px; display:block; }
 .btn { align-items:center; justify-content:center; display:inline-flex; gap:8px; padding:10px 16px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; transition:background .15s,transform .15s; white-space:nowrap; }
