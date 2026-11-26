@@ -1,3 +1,4 @@
+import { requireRegularUser } from "@/lib/demo";
 import { requireSameOrigin } from "@/lib/origin";
 import { cookies } from "next/headers";
 import { getCurrentUser } from "@/lib/tenant";
@@ -7,7 +8,7 @@ import { z } from "zod";
 export async function POST(req: Request) {
   try {
     requireSameOrigin(req);
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(); requireRegularUser(user);
     const { businessId } = z.object({ businessId: z.string() }).parse(await jsonBody(req));
     const member = await prisma.membership.findUnique({ where: { businessId_userId: { businessId, userId: user.id } } });
     if (!member) throw new ApiError(404, "NOT_FOUND", "Workspace not found");

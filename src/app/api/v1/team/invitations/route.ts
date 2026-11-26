@@ -1,3 +1,4 @@
+import { requireRegularUser } from "@/lib/demo";
 import { requireSameOrigin } from "@/lib/origin";
 import { randomBytes, createHash } from "node:crypto";
 import { z } from "zod";
@@ -19,7 +20,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     requireSameOrigin(req);
-    const c = await requireWorkspace(); requireOwner(c);
+    const c = await requireWorkspace(); requireRegularUser(c.user); requireOwner(c);
     const { email } = schema.parse(await jsonBody(req));
     const user = await prisma.user.findUnique({ where: { email } });
     if (user && await prisma.membership.findUnique({ where: { businessId_userId: { businessId: c.businessId, userId: user.id } } })) throw new ApiError(409, "MEMBER_EXISTS", "Already part of this workspace");

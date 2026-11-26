@@ -55,6 +55,18 @@ npm run smoke
 - Lead/contact create and audit stage transitions are transactional.
 - The app has no PostgreSQL RLS. Enforce all policy in server handlers and data access functions.
 
+## Public interactive demo
+
+Choose **Try Demo** on the login page. No registration or outbound email is needed.
+A temporary owner workspace is automatically populated with 14 fictional leads,
+contacts, notes, follow-up tasks and pipeline history. Each visitor gets an opaque
+HTTP-only session cookie, a separate workspace, and a one-hour expiry.
+Demo visitors can edit sample CRM records; invitations, external messaging,
+workspace switching/creation and settings writes are blocked on the server.
+Reset demo creates a new sandbox. Expired workspaces are removed during subsequent
+demo starts; allocation is rate-limited and capped at 80 concurrent workspaces.
+No demo passwords or real customer records are used.
+
 ## Authentication & invitations
 
 - Signup → verification link → login → workspace onboarding.

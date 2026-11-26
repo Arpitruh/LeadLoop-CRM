@@ -3,18 +3,28 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/http";
 import type { Membership, Lead } from "@/generated/prisma/client";
+import { DEMO_COOKIE, getDemoUser, isDemoUser, demoBusinessId } from "@/lib/demo";
+import { limited } from "@/lib/rate-limit";
 import { canAccessLead as checkLead } from "@/lib/policy";
 
 export async function getCurrentUser() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) throw new ApiError(401, "UNAUTHENTICATED", "Sign in to continue");
+  if (!session) {
+    const demo = await getDemoUser((await cookies()).get(DEMO_COOKIE)?.value);
+    if (demo) {
+      if (limited(`demo-requests:${demo.id}`, 180, 60_000)) throw new ApiError(429, "RATE_LIMITED", "Demo request limit reached; try again shortly.");
+      return demo;
+    }
+    throw new ApiError(401, "UNAUTHENTICATED", "Sign in to continue");
+  }
+  if (isDemoUser(session.user.id)) throw new ApiError(401, "UNAUTHENTICATED", "Use Try Demo to continue");
   if (!session.user.emailVerified) throw new ApiError(403, "UNVERIFIED", "Verify your email before continuing");
   return session.user;
 }
 export type Workspace = { user: Awaited<ReturnType<typeof getCurrentUser>>; membership: Membership; businessId: string; role: "OWNER" | "STAFF" };
 export async function requireWorkspace(): Promise<Workspace> {
   const user = await getCurrentUser();
-  const memberships = await prisma.membership.findMany({ where: { userId: user.id }, orderBy: { createdAt: "asc" } });
+  const memberships = await prisma.membership.findMany({ where: { userId: user.id, ...(isDemoUser(user.id) ? { businessId: demoBusinessId(user.id) } : {}) }, orderBy: { createdAt: "asc" } });
   if (!memberships.length) throw new ApiError(403, "NO_WORKSPACE", "Create or join a workspace first");
   const selected = (await cookies()).get("ll_workspace")?.value;
   const membership = memberships.find((m) => m.businessId === selected) ?? memberships[0];
