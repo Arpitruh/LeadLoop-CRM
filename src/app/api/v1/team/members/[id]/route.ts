@@ -1,3 +1,4 @@
+import { requireRegularUser } from "@/lib/demo";
 import { requireSameOrigin } from "@/lib/origin";
 import { prisma } from "@/lib/prisma";
 import { requireWorkspace, requireOwner } from "@/lib/tenant";
@@ -6,7 +7,7 @@ type Ctx = { params: Promise<{ id: string }> };
 export async function DELETE(req: Request, { params }: Ctx) {
   try {
     requireSameOrigin(req);
-    const c = await requireWorkspace(); requireOwner(c);
+    const c = await requireWorkspace(); requireRegularUser(c.user); requireOwner(c);
     const { id } = await params;
     if (id === c.user.id) throw new ApiError(400, "SELF_REMOVAL", "Owner cannot remove themselves");
     await prisma.$transaction(async (tx) => {

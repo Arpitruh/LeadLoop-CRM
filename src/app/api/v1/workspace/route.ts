@@ -1,3 +1,4 @@
+import { requireRegularUser } from "@/lib/demo";
 import { requireSameOrigin } from "@/lib/origin";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
@@ -9,7 +10,7 @@ const schema = z.object({ name: z.string().trim().min(2).max(80), slug: z.string
 export async function POST(req: Request) {
   try {
     requireSameOrigin(req);
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(); requireRegularUser(user);
     const input = schema.parse(await jsonBody(req));
     try { new Intl.DateTimeFormat("en", { timeZone: input.timezone }); } catch { throw new ApiError(400, "TIMEZONE", "Invalid timezone"); }
     const business = await prisma.$transaction(async (tx) => {

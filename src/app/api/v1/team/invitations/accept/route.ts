@@ -1,3 +1,4 @@
+import { requireRegularUser } from "@/lib/demo";
 import { requireSameOrigin } from "@/lib/origin";
 import { createHash } from "node:crypto";
 import { z } from "zod";
@@ -8,7 +9,7 @@ const schema = z.object({ token: z.string().length(64) });
 export async function POST(req: Request) {
   try {
     requireSameOrigin(req);
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(); requireRegularUser(user);
     const { token } = schema.parse(await jsonBody(req));
     const tokenHash = createHash("sha256").update(token).digest("hex");
     const result = await prisma.$transaction(async (tx) => {

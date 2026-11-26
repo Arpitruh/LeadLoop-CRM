@@ -17,6 +17,7 @@ export async function sendEmail(
   link?: string,
   purpose?: MailPurpose,
 ): Promise<void> {
+  if (to.toLowerCase().endsWith("@demo.leadloop.example")) return;
   const serviceUrl = process.env.NOTIFICATION_SERVICE_URL?.trim();
   const apiKey = process.env.NOTIFICATION_SERVICE_API_KEY?.trim();
 

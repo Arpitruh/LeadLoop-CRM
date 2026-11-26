@@ -1,3 +1,4 @@
+import { requireRegularUser } from "@/lib/demo";
 import { requireSameOrigin } from "@/lib/origin";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -14,7 +15,7 @@ export async function GET() {
 export async function PATCH(req: Request) {
   try {
     requireSameOrigin(req);
-    const c = await requireWorkspace(); requireOwner(c);
+    const c = await requireWorkspace(); requireRegularUser(c.user); requireOwner(c);
     const input = schema.parse(await jsonBody(req));
     if (input.timezone) try { new Intl.DateTimeFormat("en", { timeZone: input.timezone }); } catch { throw new ApiError(400, "TIMEZONE", "Invalid timezone"); }
     const data = await prisma.business.update({ where: { id: c.businessId }, data: input });
