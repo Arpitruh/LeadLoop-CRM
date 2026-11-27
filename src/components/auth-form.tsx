@@ -41,10 +41,19 @@ export default function AuthForm({mode}:{mode:Mode}) {
     finally {setLoading(false);}
   }
   async function enterDemo() {
-    setDemoLoading(true); setError("");
+    setDemoLoading(true); setError(""); setMessage("");
     try {
-      const response = await fetch("/api/demo", { method: "POST" });
-      const result = await response.json();
+      let response = await fetch("/api/demo", { method: "POST" });
+      let result = await response.json();
+      // An existing account session must be revoked before creating a demo.
+      // Only do this when the user explicitly chooses Try Demo and the API
+      // confirms a conflicting session. Never bypass the server-side guard.
+      if (response.status === 409 && result.error?.code === "SIGNED_IN") {
+        const signOut = await authClient.signOut();
+        if (signOut.error) throw new Error(signOut.error.message || "Could not switch to the demo. Please try again.");
+        response = await fetch("/api/demo", { method: "POST" });
+        result = await response.json();
+      }
       if (!response.ok) throw new Error(result.error?.message || "Unable to start demo");
       // Reload across the authentication boundary to avoid stale private route content.
       window.location.assign(new URL("/dashboard", window.location.origin).href);
